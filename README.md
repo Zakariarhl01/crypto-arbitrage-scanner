@@ -72,19 +72,6 @@ USDT->ETH->BTC->USDT   -0.2956 %
 ```
 *(les meilleurs triangles se collent au plancher des 3× frais ≈ -0.30 % → marché efficient)*
 
-### 4. `scanner_multi_plateformes.py` — Comparateur frais & plateformes
-Ajouté suite à un **retour terrain** (« faut voir les plateformes et les frais aussi »).
-Récupère les **vrais frais** de chaque exchange via CCXT et compare le meilleur triangle
-sur 5-6 plateformes. Met en évidence que le plancher de rentabilité = **3 × frais**, et
-que le bon choix combine **frais bas** ET **paires encore peu arbitrées**.
-
-```
-Plateforme  Frais/ordre  Plancher (3x)   Meilleur triangle
-gate           0.200%       -0.60%       USDT->ADA->BTC->USDT  -0.2294%   ← frais + hauts, mais meilleur triangle
-binance        0.100%       -0.30%       USDT->BTC->XRP->USDT  -0.2950%
-kraken         0.400%       -1.20%       USDT->BTC->LTC->USDT  -1.1700%   ← frais élevés = rédhibitoire
-```
-
 ---
 
 ## 🏗️ Démarche
@@ -115,7 +102,6 @@ kraken         0.400%       -1.20%       USDT->BTC->LTC->USDT  -1.1700%   ← fr
 ├── scanner_inter_exchange.py     # arbitrage entre plateformes (gros caps)
 ├── scanner_petites_cryptos.py    # petites cryptos + mesure de liquidité/slippage
 ├── scanner_triangulaire.py       # triangulaire intra-exchange (découverte auto)
-├── scanner_multi_plateformes.py  # comparateur frais réels & plateformes (v2, retour terrain)
 ├── requirements.txt
 └── README.md
 ```
