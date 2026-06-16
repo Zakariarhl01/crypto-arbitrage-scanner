@@ -1,61 +1,139 @@
 # 🔍 Crypto Arbitrage Scanner
 
-Un projet d'exploration des **3 grands types d'arbitrage crypto**, construit pour
-comprendre comment fonctionnent (et pourquoi sont *difficiles*) les bots de trading
-d'arbitrage. Les scanners **lisent les prix publics** de plusieurs exchanges et
-calculent la rentabilité réelle — **aucun ordre n'est passé, aucun argent engagé**.
+> Projet d'exploration : **« Peut-on, seul, gagner de l'argent avec un bot d'arbitrage crypto ? »**
+> Réponse construite avec du **code réel** et des **données de marché réelles** — pas des promesses.
 
-## 🎯 Objectif
+![Python](https://img.shields.io/badge/Python-3.9+-blue)
+![CCXT](https://img.shields.io/badge/CCXT-4.5+-green)
+![License](https://img.shields.io/badge/usage-éducatif-orange)
+![Trading](https://img.shields.io/badge/orders-aucun%20(read--only)-lightgrey)
 
-Répondre à une vraie question avec des données réelles, pas des promesses :
-> « Peut-on gagner de l'argent avec un bot d'arbitrage crypto quand on est seul ? »
+---
 
-La réponse courte, démontrée par le code : **techniquement oui, financièrement très
-difficile** — les frais et la concurrence des bots professionnels effacent la
-quasi-totalité des écarts.
+## 🎯 Le problème
 
-## 📦 Contenu
+L'arbitrage crypto est partout présenté comme une « machine à imprimer de l'argent » :
+acheter un actif moins cher sur une plateforme, le revendre plus cher sur une autre,
+empocher la différence. Sur le papier, c'est simple. **Mais est-ce vrai en pratique
+pour un développeur seul ?**
 
-| Fichier | Type d'arbitrage | Ce qu'il démontre |
-|---|---|---|
-| `scanner_inter_exchange.py` | Inter-exchange (gros caps) | Les écarts BTC/ETH/SOL sont minuscules ; les frais les annulent |
-| `scanner_petites_cryptos.py` | Inter-exchange (small caps) + liquidité | Le **slippage** : un écart « au prix affiché » disparaît quand on simule un vrai trade en marchant dans le carnet d'ordres |
-| `scanner_triangulaire.py` | Triangulaire (intra-exchange) | Une boucle `USDT→X→Y→USDT` sur un seul exchange ; les 3× frais (~0.30 %) forment un plancher difficile à battre |
+Plutôt que de croire les promesses, j'ai construit **trois scanners** pour mesurer la
+réalité des écarts de prix sur des exchanges réels, frais et liquidité inclus.
 
-## 🧠 Concepts techniques couverts
+## 🧪 TL;DR — Les résultats
 
-- **CCXT** : connexion unifiée à ~100 exchanges
-- **bid / ask** : on achète au *ask*, on vend au *bid* (jamais au « prix »)
-- **Carnet d'ordres & slippage** : « marcher dans le carnet » pour estimer le prix réel d'un trade
-- **Frais maker / taker** : leur impact décisif sur la rentabilité
-- **Arbitrage triangulaire** : découverte automatique des triangles disponibles
-- **Programmation** : gestion d'erreurs réseau, scan en boucle, calculs de rentabilité
+| Question | Réponse mesurée |
+|---|---|
+| Y a-t-il des écarts de prix ? | Oui, mais **minuscules** (souvent < 0.05 %) |
+| Survivent-ils aux frais ? | **Non** — les frais (0.1–0.26 % par ordre) les effacent |
+| Les petites cryptos sont-elles une niche ? | **Pas sur les gros exchanges** : déjà arbitrées, et le slippage tue les gros trades |
+| Le triangulaire (1 exchange) est-il rentable ? | Plancher à ~**-0.30 %** (3× les frais) : marché efficient |
 
-## 🚀 Lancer
+> **Conclusion honnête : techniquement faisable, financièrement très difficile pour un
+> particulier.** L'arbitrage rentable est dominé par des sociétés à infrastructure
+> ultra-rapide et frais quasi nuls. Ce projet le *prouve* avec des chiffres.
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+---
 
-python scanner_inter_exchange.py
-python scanner_petites_cryptos.py
-python scanner_triangulaire.py        # 5 scans de démonstration
+## 🧰 Les trois scanners
+
+### 1. `scanner_inter_exchange.py` — Arbitrage entre plateformes
+Compare le prix de **BTC / ETH / SOL** sur Kraken, Kucoin et Bybit.
+Démontre la différence cruciale entre **écart brut** (illusion) et **écart net après
+frais** (réalité).
+
+```
+=== BTC/USDT ===
+  → Acheter sur kucoin, vendre sur kraken
+     Écart brut : +0.009 %   |   Écart NET (après frais) : -0.350 %
+  ❌ Non rentable : les frais mangent l'écart.
 ```
 
-## 📊 Exemple de résultat (triangulaire)
+### 2. `scanner_petites_cryptos.py` — Petites cryptos + liquidité
+Teste ~20 cryptos petites/moyennes et **« marche dans le carnet d'ordres »** pour
+simuler un vrai trade de 500 USDT. Révèle le **slippage** : un écart séduisant « au
+prix affiché » s'effondre dès qu'on trade un vrai volume.
+
+```
+Crypto      Achat    Vente     Écart naïf  Écart réel   Verdict
+GMT/USDT    kucoin   bybit        -0.319%     -0.654%   ❌ frais/slippage
+```
+*(le slippage double parfois la perte entre l'écart « naïf » et l'écart « réel »)*
+
+### 3. `scanner_triangulaire.py` — Arbitrage triangulaire (intra-exchange)
+**Découvre automatiquement** tous les triangles possibles (ex: `USDT→BTC→ETH→USDT`)
+sur un seul exchange, et calcule si la boucle est gagnante. Avantage : pas de frais
+de retrait ni de transfert entre plateformes.
 
 ```
 USDT->XRP->BTC->USDT   -0.2626 %
 USDT->BNB->BTC->USDT   -0.2953 %
 USDT->ETH->BTC->USDT   -0.2956 %
 ```
+*(les meilleurs triangles se collent au plancher des 3× frais ≈ -0.30 % → marché efficient)*
 
-Les meilleurs triangles se collent au plancher des frais (~-0.30 %) : le marché est
-**efficient**. C'est exactement la leçon que ce projet met en évidence.
+---
+
+## 🏗️ Démarche
+
+1. **Hypothèse** : « il existe des écarts exploitables ».
+2. **Mesure inter-exchange** → écarts réels < frais. Hypothèse invalidée pour les gros caps.
+3. **Hypothèse affinée** : « les petites cryptos sont une niche moins concurrencée ».
+4. **Mesure avec liquidité** → le slippage tue l'avantage. Invalidée sur gros exchanges.
+5. **Dernier angle** : le triangulaire élimine frais de retrait et transferts.
+6. **Mesure** → plancher des frais incompressible. Conclusion documentée.
+
+> Cette boucle *hypothèse → mesure → conclusion* est le vrai cœur du projet :
+> une démarche d'ingénieur, pas un pari.
+
+## 🛠️ Stack & concepts techniques
+
+- **Python 3.9+** · **CCXT** (connexion unifiée à ~100 exchanges)
+- **bid / ask** : on achète au *ask*, on vend au *bid* — jamais au « prix »
+- **Carnet d'ordres & slippage** : simulation de trade en « marchant dans le carnet »
+- **Frais maker / taker** et leur impact décisif
+- **Arbitrage triangulaire** : découverte automatique de cycles dans un graphe de paires
+- **Robustesse** : gestion d'erreurs réseau, scan en boucle, rate limiting
+
+## 📂 Structure
+
+```
+.
+├── scanner_inter_exchange.py     # arbitrage entre plateformes (gros caps)
+├── scanner_petites_cryptos.py    # petites cryptos + mesure de liquidité/slippage
+├── scanner_triangulaire.py       # triangulaire intra-exchange (découverte auto)
+├── requirements.txt
+└── README.md
+```
+
+## 🚀 Installation & lancement
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate        # Windows : .venv\Scripts\activate
+pip install -r requirements.txt
+
+python scanner_inter_exchange.py
+python scanner_petites_cryptos.py
+python scanner_triangulaire.py    # 5 scans de démonstration
+```
+Aucune clé API requise : tout est en **lecture publique**.
+
+## 🎓 Ce que j'ai appris
+
+- Manipuler une **API financière temps réel** et raisonner sur des données de marché.
+- L'écart entre la **théorie** (prix affiché) et la **réalité** (frais + slippage + liquidité).
+- Pourquoi **l'efficience de marché** existe et qui capte réellement les opportunités.
+- Structurer un projet **proprement et en sécurité** (séparation code public / privé,
+  secrets dans des variables d'environnement, jamais dans le code).
 
 ## ⚠️ Avertissement
 
-Projet **éducatif**. Ce n'est pas un conseil financier. L'arbitrage rentable est
-dominé par des acteurs disposant d'infrastructures à très basse latence et de frais
-quasi nuls. À utiliser pour apprendre, pas pour « devenir riche ».
+Projet **strictement éducatif**, ce n'est pas un conseil financier. Les scanners ne
+passent **aucun ordre** et n'engagent **aucun argent**. L'arbitrage rentable demande
+des moyens (capital, infrastructure basse latence) hors de portée d'un particulier.
+À utiliser pour **apprendre**, pas pour spéculer.
+
+---
+
+*Construit par [Zakaria Rahal](https://github.com/Zakariarhl01) — étudiant Dev IA & Data.*
